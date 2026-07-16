@@ -5,9 +5,14 @@ import type { Dataset } from './data/types';
 import { Lens } from './lens/lens';
 import { MapLayer } from './map/map';
 
-const DATA_URL = '/data/demography.json';
-const COUNTRIES_URL = '/data/countries.geojson';
-const CENTROIDS_URL = '/data/centroids.json';
+// Resolved against the deployed base, not the domain root: on GitHub Pages the
+// app lives at /<repo>/, where a leading-slash path would miss. Vite inlines
+// BASE_URL at build time and always gives it a trailing slash.
+const asset = (name: string) => new URL(`data/${name}`, new URL(import.meta.env.BASE_URL, location.href)).href;
+
+const DATA_URL = asset('demography.json');
+const COUNTRIES_URL = asset('countries.geojson');
+const CENTROIDS_URL = asset('centroids.json');
 
 async function boot(): Promise<void> {
   const [dataset, centroids] = await Promise.all([
