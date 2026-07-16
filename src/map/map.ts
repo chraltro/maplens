@@ -86,10 +86,12 @@ export class MapLayer {
     this.ready = true;
 
     // Sampling on 'move' rather than 'moveend' is what makes the lens track
-    // the pan continuously instead of snapping when the gesture ends.
-    this.map.on('move', this.sample);
+    // the pan continuously instead of snapping when the gesture ends. But
+    // 'move' can fire several times per frame, and each sample is a hit-test
+    // against full-detail country polygons, so coalesce to one per frame.
+    this.map.on('move', this.requestSample);
     this.map.on('sourcedata', (e) => {
-      if (e.sourceId === 'countries' && e.isSourceLoaded) this.sample();
+      if (e.sourceId === 'countries' && e.isSourceLoaded) this.requestSample();
     });
     this.sample();
   }
@@ -144,6 +146,16 @@ export class MapLayer {
 
   private lastFocus: string | null = null;
   private lastFeatureId: string | number | undefined;
+  private pending = 0;
+
+  /** Coalesce a burst of move events into a single sample next frame. */
+  private requestSample = (): void => {
+    if (this.pending) return;
+    this.pending = requestAnimationFrame(() => {
+      this.pending = 0;
+      this.sample();
+    });
+  };
 
   private sample = (): void => {
     if (!this.ready) return;

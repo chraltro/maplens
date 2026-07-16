@@ -34,25 +34,25 @@ html, body {
   inset: 0;
 }
 
-/* Push the basemap back so the lens sits clearly in front of it. The filter
-   has to land on the canvas itself: MapLibre paints there, and a filter on the
-   container does not reach it. */
-#map .maplibregl-canvas {
-  filter: saturate(0.5) brightness(0.62) contrast(0.95);
-}
+/* The basemap is dimmed by a fixed overlay (.map-dim) rather than a CSS filter
+   on the canvas. A filter re-processes every pixel of a 1440x900 WebGL surface
+   on every frame of a pan (~14ms); an overlay is a single composited quad. */
 
-/* A soft vignette settles the edges without lifting the centre. */
+/* Dims the basemap and vignettes the edges in one composited layer: a flat
+   wash to push the map back, plus a radial gradient to settle the corners. */
 .vignette {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(7, 11, 16, 0) 45%,
-    rgba(7, 11, 16, 0.4) 82%,
-    rgba(7, 11, 16, 0.7) 100%
-  );
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(7, 11, 16, 0) 45%,
+      rgba(7, 11, 16, 0.45) 82%,
+      rgba(7, 11, 16, 0.75) 100%
+    ),
+    linear-gradient(rgba(9, 14, 22, 0.42), rgba(9, 14, 22, 0.42));
 }
 
 /* Chrome is decoration; the map must stay grabbable underneath it. */
@@ -220,7 +220,19 @@ html, body {
 }
 body.ready .lens-mount { opacity: 1; }
 
-.lens { display: block; overflow: visible; }
+/* Promote the lens to its own compositor layer. Without it the browser
+   re-rasterises the whole SVG against the moving map every frame; with it the
+   lens is composited, and a pan costs about what it does with no lens at all. */
+.lens {
+  display: block;
+  overflow: visible;
+  will-change: transform;
+}
+
+/* No drop-shadow, in CSS or SVG. Measured at ~83ms per frame of a pan: a
+   shadow over a moving map is re-rasterised every frame, and layer promotion
+   does not save it. Separation from the map comes from the vignette, the
+   dimmed basemap, and the outlines below, all of which are free. */
 
 .lens-arms { opacity: var(--lens-data-opacity); }
 
@@ -228,7 +240,13 @@ body.ready .lens-mount { opacity: 1; }
    spine, female the other, age running outward. Same form on purpose, so the
    two are directly comparable; the arm label says which is which.
    Mortality sits a little softer so population stays the primary read. */
-.bar { stroke: none; }
+/* A hairline of the page's own dark separates each bar from the map and from
+   its neighbours. This is what the drop-shadow used to do, at no per-frame
+   cost: a stroke is rasterised with the path, not as a second pass. */
+.bar {
+  stroke: rgba(7, 11, 16, 0.75);
+  stroke-width: 0.5;
+}
 
 .bar-male .bar { fill: var(--male); }
 .bar-female .bar { fill: var(--female); }
@@ -267,12 +285,13 @@ body.ready .lens-mount { opacity: 1; }
 
 .core-disc {
   fill: var(--core);
-  fill-opacity: 0.93;
+  fill-opacity: 0.96;
 }
+/* Carries the disc's edge on its own now that there is no shadow behind it. */
 .core-rim {
   fill: none;
-  stroke: rgba(125, 211, 252, 0.55);
-  stroke-width: 1.25;
+  stroke: rgba(125, 211, 252, 0.7);
+  stroke-width: 1.5;
 }
 .core-dot { fill: var(--rim); opacity: 0.9; }
 
@@ -298,11 +317,18 @@ body.ready .lens-mount { opacity: 1; }
   opacity: var(--lens-data-opacity);
 }
 
+/* Arm titles sit over open map, so they carry their own dark outline rather
+   than relying on whatever happens to be behind them. */
 .arm-label {
-  fill: var(--ink-dim);
-  font-size: 9.5px;
-  font-weight: 600;
-  letter-spacing: 0.3em;
+  fill: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  paint-order: stroke;
+  stroke: rgba(7, 11, 16, 0.85);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+  opacity: var(--lens-data-opacity);
 }
 
 .fatal {

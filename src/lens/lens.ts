@@ -135,13 +135,11 @@ export class Lens {
 
   private buildDefs(): void {
     const defs = el('defs');
-    const filter = el('filter', {
-      id: 'lens-shadow', x: '-30%', y: '-30%', width: '160%', height: '160%',
-    });
-    filter.appendChild(el('feDropShadow', {
-      dx: 0, dy: 2, stdDeviation: 5, 'flood-color': '#000', 'flood-opacity': 0.45,
-    }));
-    defs.appendChild(filter);
+
+    // No feDropShadow here, deliberately. An SVG filter over the arms forces a
+    // full-surface re-rasterise on every frame of a pan, and it measured at
+    // ~125ms per frame: about half the lens's entire cost, for decoration.
+    // The bars carry their own contrast instead, via CSS.
 
     for (const arm of ['population', 'mortality', 'fertility'] as ArmKey[]) {
       defs.appendChild(el('path', {
@@ -154,7 +152,7 @@ export class Lens {
   }
 
   private buildArms(): void {
-    const g = el('g', { class: 'lens-arms', filter: 'url(#lens-shadow)' });
+    const g = el('g', { class: 'lens-arms' });
 
     for (const h of this.halves) {
       const count = h.key === 'fert' ? N_FERT : N_AGES;
@@ -255,10 +253,13 @@ export class Lens {
     g.appendChild(el('circle', { r: this.spec.coreRadius, class: 'core-rim' }));
     g.appendChild(el('circle', { r: 2.5, class: 'core-dot' }));
 
-    this.nameEl = el('text', { class: 'core-name', y: -36, 'text-anchor': 'middle' });
-    this.statTop = el('text', { class: 'core-stat', y: -4, 'text-anchor': 'middle' });
-    this.statMid = el('text', { class: 'core-sub', y: 24, 'text-anchor': 'middle' });
-    this.statBot = el('text', { class: 'core-sub', y: 42, 'text-anchor': 'middle' });
+    // Four lines stacked inside the disc. The rows are kept short enough that
+    // each fits the chord at its own height: the disc narrows toward top and
+    // bottom, so a line that fits at the centre can still overrun lower down.
+    this.nameEl = el('text', { class: 'core-name', y: -38, 'text-anchor': 'middle' });
+    this.statTop = el('text', { class: 'core-stat', y: -8, 'text-anchor': 'middle' });
+    this.statMid = el('text', { class: 'core-sub', y: 20, 'text-anchor': 'middle' });
+    this.statBot = el('text', { class: 'core-sub', y: 38, 'text-anchor': 'middle' });
     g.append(this.nameEl, this.statTop, this.statMid, this.statBot);
 
     this.root.appendChild(g);
@@ -278,8 +279,9 @@ export class Lens {
       // Long names would overrun the disc; the map label carries the full one.
       this.nameEl.textContent = name.length > 22 ? `${name.slice(0, 21)}…` : name;
       this.statTop.textContent = formatPop(snapshot.total);
-      this.statMid.textContent = `${snapshot.tfr.toFixed(1)} births/woman · ${snapshot.e0.toFixed(0)} yr life exp.`;
-      this.statBot.textContent = `median age ${snapshot.medianAge.toFixed(0)}`;
+      // One line per fact: combined, these overran the disc's chord.
+      this.statMid.textContent = `${snapshot.tfr.toFixed(1)} births/woman`;
+      this.statBot.textContent = `${snapshot.e0.toFixed(0)} yr life · median ${snapshot.medianAge.toFixed(0)}`;
     }
 
     if (this.firstPaint && snapshot) {

@@ -138,6 +138,44 @@ async function readCsv(path, onRow) {
   }
 }
 
+/**
+ * WPP uses long formal names ("Venezuela (Bolivarian Republic of)") that do
+ * not fit the lens dial and are not what anyone types into a search box.
+ * Only the ones that actually need shortening are listed.
+ */
+const SHORT_NAME = {
+  VEN: 'Venezuela',
+  BOL: 'Bolivia',
+  LAO: 'Laos',
+  IRN: 'Iran',
+  COD: 'DR Congo',
+  COG: 'Congo',
+  PRK: 'North Korea',
+  KOR: 'South Korea',
+  SYR: 'Syria',
+  TZA: 'Tanzania',
+  MDA: 'Moldova',
+  RUS: 'Russia',
+  USA: 'United States',
+  GBR: 'United Kingdom',
+  ARE: 'UAE',
+  CAF: 'Central African Rep.',
+  DOM: 'Dominican Rep.',
+  VNM: 'Vietnam',
+  BRN: 'Brunei',
+  FSM: 'Micronesia',
+  VCT: 'St Vincent & Grenadines',
+  BES: 'Caribbean Netherlands',
+  CIV: "Côte d'Ivoire",
+  XKX: 'Kosovo',
+  TUR: 'Türkiye',
+  CZE: 'Czechia',
+  PSE: 'Palestine',
+  HKG: 'Hong Kong',
+  MAC: 'Macao',
+  TWN: 'Taiwan',
+};
+
 const countries = new Map();
 
 function blankSnapshot() {
@@ -320,7 +358,7 @@ function finalise() {
       };
     }
     if (Object.keys(years).length === 0) { dropped++; continue; }
-    out.countries[iso3] = { iso3, name: c.name, centroid: [0, 0], years };
+    out.countries[iso3] = { iso3, name: SHORT_NAME[iso3] ?? c.name, centroid: [0, 0], years };
   }
 
   const n = Object.keys(out.countries).length;
