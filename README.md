@@ -1,9 +1,13 @@
-# Demographic Lens
+# maplens
 
 A world map you drag around. A lens fixed at the centre of the viewport reads
-whatever country sits under the crosshair and draws its demographic profile:
-three population pyramids arranged around a dial, showing population, mortality
-and fertility by five-year age band.
+whatever country sits under the crosshair and draws its profile, live, as you
+pan.
+
+The lens is the point. Demographics are just the first thing plugged into it:
+the current view shows population, mortality and fertility as three pyramids
+around a dial, from UN World Population Prospects 2024. Any country-keyed
+dataset could drive it instead.
 
 Inspired by [VisQuill's Demographic Profiles](https://visquill.com/gallery/world-demographics/)
 by Dr. Benjamin Niedermann. This is an independent implementation, not a fork:
@@ -27,15 +31,27 @@ load error telling you which one is missing.
 ## How it fits together
 
 ```
+src/map/map.ts                MapLibre, and the country-under-crosshair lookup
+src/lens/reactive.ts          Signals, springs, and an idle-when-settled ticker
+src/lens/geometry.ts          Pure geometry: pyramids bent around a dial
+src/lens/lens.ts              The lens: SVG, animation, readout
+src/main.ts                   Wiring: data -> map focus -> lens
+
+src/data/types.ts             The demographic dataset's shape
 scripts/build-countries.mjs   Natural Earth 50m  -> public/data/countries.geojson
 scripts/build-data.mjs        UN WPP 2024 CSVs   -> public/data/demography.json
-
-src/map/map.ts                MapLibre, and the country-under-crosshair lookup
-src/lens/geometry.ts          Pure geometry: pyramids bent around a dial
-src/lens/reactive.ts          Signals, springs, and an idle-when-settled ticker
-src/lens/lens.ts              The lens itself: SVG, animation, readout
-src/main.ts                   Wiring: data -> map focus -> lens
 ```
+
+The first three are dataset-agnostic. `map.ts` only ever emits an ISO3 code;
+`reactive.ts` and `geometry.ts` know nothing about demography at all. What ties
+the lens to this particular data is `lens.ts` (which reads `Snapshot` fields
+and decides how to normalise them) plus the two build scripts.
+
+Swapping in another country-keyed dataset means a new build script, a new
+`Snapshot` type, and reworking the arms in `lens.ts`. Everything else stands.
+Note that the three-pyramid arrangement is itself a demographic choice: a
+dataset without an age dimension would want a different mark entirely, and the
+geometry does not currently offer one.
 
 The interaction lives in two places. `map.ts` samples the country under the
 viewport centre on every `move` event (not `moveend`, which is what makes the
