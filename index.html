@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Demographic Lens</title>
+    <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin />
+  </head>
+  <body>
+    <div id="map"></div>
+    <div class="vignette"></div>
+
+    <div id="lens-mount" class="lens-mount"></div>
+
+    <header class="chrome chrome-top">
+      <h1>Demographic Lens</h1>
+      <p>Drag the map. The lens reads whatever country sits under the crosshair.</p>
+      <input
+        id="search"
+        class="search"
+        type="text"
+        list="search-list"
+        placeholder="Jump to a country…"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <datalist id="search-list"></datalist>
+
+      <dl class="legend">
+        <dt><span class="key key-male"></span><span class="key key-female"></span></dt>
+        <dd>Male / female — each arm is a pyramid, age running outward</dd>
+        <dt><span class="key key-solid"></span></dt>
+        <dd><b>Population</b> — people alive, scaled to the country's largest band</dd>
+        <dt><span class="key key-mort"></span></dt>
+        <dd><b>Mortality</b> — deaths per 1,000, log scale</dd>
+        <dt><span class="key key-fert"></span></dt>
+        <dd><b>Fertility</b> — share of births, ages 15–49</dd>
+      </dl>
+    </header>
+
+    <div class="chrome chrome-bottom">
+      <div class="timeline">
+        <label for="year" class="timeline-label">Year <output id="year-out">2020</output></label>
+        <input id="year" type="range" min="0" max="0" step="1" value="0" />
+      </div>
+    </div>
+
+    <footer class="chrome chrome-credit">
+      Data: <a href="https://population.un.org/wpp/" target="_blank" rel="noopener">UN World Population Prospects 2024</a>
+      (CC BY 3.0 IGO) · Map: <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> /
+      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a> ·
+      Inspired by <a href="https://visquill.com/gallery/world-demographics/" target="_blank" rel="noopener">VisQuill</a>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

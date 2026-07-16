@@ -1,0 +1,339 @@
+/* The lens is the only saturated thing on screen; the map is a dim substrate.
+   Sexes are split on a warm/cool axis rather than the usual pink/blue, and
+   fertility gets its own hue so the three arms never read as one series. */
+:root {
+  --ink: #e8eef5;
+  --ink-dim: #8fa3b8;
+  /* Blue/purple rather than the usual blue/pink: the two sexes are two halves
+     of one quantity, so adjacent hues read as a pair where opposites would
+     read as a contrast. Both stay distinguishable in the common forms of
+     colour blindness, where red/green would not. */
+  --male: #6ba8ff;
+  --female: #c77dff;
+  --fert: #7ef0c4;
+  --core: #0d1520;
+  --rim: #7dd3fc;
+  --chrome-bg: rgba(9, 15, 23, 0.72);
+  --lens-data-opacity: 1;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #070b10;
+  color: var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+}
+
+/* Push the basemap back so the lens sits clearly in front of it. The filter
+   has to land on the canvas itself: MapLibre paints there, and a filter on the
+   container does not reach it. */
+#map .maplibregl-canvas {
+  filter: saturate(0.5) brightness(0.62) contrast(0.95);
+}
+
+/* A soft vignette settles the edges without lifting the centre. */
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(7, 11, 16, 0) 45%,
+    rgba(7, 11, 16, 0.4) 82%,
+    rgba(7, 11, 16, 0.7) 100%
+  );
+}
+
+/* Chrome is decoration; the map must stay grabbable underneath it. */
+.chrome {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+}
+.chrome a,
+.chrome input,
+.chrome button { pointer-events: auto; }
+
+.chrome-top {
+  top: 0;
+  left: 0;
+  padding: 22px 26px;
+  max-width: 30rem;
+}
+.chrome-top h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.chrome-top p {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  max-width: 24rem;
+}
+
+.search {
+  margin-top: 12px;
+  width: 15rem;
+  max-width: 100%;
+  background: var(--chrome-bg);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 9px;
+  padding: 8px 11px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  outline: none;
+}
+.search::placeholder { color: #6b7f94; }
+.search:focus {
+  border-color: rgba(125, 211, 252, 0.5);
+  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.13);
+}
+
+.legend {
+  margin: 16px 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 7px 9px;
+  align-items: center;
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+  max-width: 18rem;
+}
+.legend dt { display: flex; gap: 3px; }
+.legend dd { margin: 0; line-height: 1.35; }
+.legend b { color: var(--ink); font-weight: 600; }
+
+.key {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+.key-male { background: var(--male); }
+.key-female { background: var(--female); }
+.key-solid {
+  background: linear-gradient(90deg, var(--male) 50%, var(--female) 50%);
+}
+.key-mort {
+  background: linear-gradient(90deg, var(--male) 50%, var(--female) 50%);
+  opacity: 0.72;
+}
+.key-fert { background: var(--fert); }
+
+.chrome-bottom {
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  width: min(30rem, calc(100vw - 3rem));
+}
+
+.timeline {
+  background: var(--chrome-bg);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  padding: 12px 16px 14px;
+}
+.timeline-label {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
+}
+.timeline-label output {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+#year {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  outline: none;
+}
+#year::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--rim);
+  cursor: grab;
+  border: 2px solid #0b1219;
+  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.2);
+}
+#year::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border: 2px solid #0b1219;
+  border-radius: 50%;
+  background: var(--rim);
+  cursor: grab;
+}
+#year:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.45); }
+
+.chrome-credit {
+  right: 0;
+  bottom: 0;
+  padding: 10px 14px;
+  font-size: 0.66rem;
+  color: var(--ink-dim);
+  text-align: right;
+  max-width: 34rem;
+  line-height: 1.6;
+}
+.chrome-credit a { color: #9fc3e8; text-decoration: none; }
+.chrome-credit a:hover { text-decoration: underline; }
+
+/* The lens never moves: the map slides beneath it. */
+.lens-mount {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+body.ready .lens-mount { opacity: 1; }
+
+.lens { display: block; overflow: visible; }
+
+.lens-arms { opacity: var(--lens-data-opacity); }
+
+/* Population and mortality are both true pyramids: male one way off the
+   spine, female the other, age running outward. Same form on purpose, so the
+   two are directly comparable; the arm label says which is which.
+   Mortality sits a little softer so population stays the primary read. */
+.bar { stroke: none; }
+
+.bar-male .bar { fill: var(--male); }
+.bar-female .bar { fill: var(--female); }
+.bar-fert .bar { fill: var(--fert); }
+
+.arm-mortality .bar { fill-opacity: 0.72; }
+
+.spine {
+  stroke: rgba(232, 238, 245, 0.35);
+  stroke-width: 1;
+  fill: none;
+}
+
+.axis-rule {
+  stroke: rgba(232, 238, 245, 0.16);
+  stroke-width: 1;
+  fill: none;
+}
+
+/* Age pills ride the spine and mask the bars behind them, so each band is
+   named right where it is read. */
+.age-pill-bg {
+  fill: rgba(11, 17, 25, 0.9);
+  stroke: rgba(232, 238, 245, 0.16);
+  stroke-width: 0.75;
+}
+.age-label {
+  fill: var(--ink);
+  font-size: 7.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+.lens-axes { opacity: var(--lens-data-opacity); }
+
+.core-disc {
+  fill: var(--core);
+  fill-opacity: 0.93;
+}
+.core-rim {
+  fill: none;
+  stroke: rgba(125, 211, 252, 0.55);
+  stroke-width: 1.25;
+}
+.core-dot { fill: var(--rim); opacity: 0.9; }
+
+.core-name {
+  fill: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: var(--lens-data-opacity);
+}
+.core-stat {
+  fill: var(--ink);
+  font-size: 27px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  opacity: var(--lens-data-opacity);
+}
+.core-sub {
+  fill: var(--ink-dim);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  opacity: var(--lens-data-opacity);
+}
+
+.arm-label {
+  fill: var(--ink-dim);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+}
+
+.fatal {
+  position: absolute;
+  z-index: 100;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1b1013;
+  border: 1px solid #6b2733;
+  color: #ffd9d9;
+  padding: 18px 22px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  max-width: 26rem;
+}
+
+/* MapLibre's own chrome, dimmed to match. */
+.maplibregl-ctrl-attrib {
+  background: rgba(9, 15, 23, 0.6) !important;
+  font-size: 10px;
+}
+.maplibregl-ctrl-attrib a { color: #7f93a8 !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lens-mount { transition: none; }
+}
+
+@media (max-width: 640px) {
+  .chrome-top { padding: 14px 16px; }
+  .chrome-top p { display: none; }
+  .chrome-credit { display: none; }
+}
